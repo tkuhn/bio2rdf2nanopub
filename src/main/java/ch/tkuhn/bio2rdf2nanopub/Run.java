@@ -9,9 +9,14 @@ import org.nanopub.Nanopub;
 import org.nanopub.NanopubImpl;
 import org.nanopub.NanopubUtils;
 import org.nanopub.trusty.MakeTrustyNanopub;
-import org.openrdf.model.impl.URIImpl;
+import org.openrdf.model.Resource;
+import org.openrdf.model.Statement;
+import org.openrdf.model.URI;
+import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.Update;
+import org.openrdf.repository.RepositoryException;
+import org.openrdf.repository.RepositoryResult;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.repository.sail.SailRepositoryConnection;
 import org.openrdf.rio.RDFFormat;
@@ -49,7 +54,9 @@ public class Run {
 		try {
 			init();
 			for (String dataset : datasets) {
-				test(dataset);
+				loadData(dataset);
+				writeData();
+				clearData();
 			}
 		} catch (Throwable th) {
 			logger.error(th.getMessage(), th);
@@ -64,7 +71,7 @@ public class Run {
 		sailRepo = new SailRepository(store);
 	}
 
-	private void test(String dataset) throws Exception {
+	private void loadData(String dataset) throws Exception {
 		SailRepositoryConnection conn = sailRepo.getConnection();
 		Scanner scanner = new Scanner(getQueryFile(dataset));
 		String query = "";
@@ -74,10 +81,32 @@ public class Run {
 		scanner.close();
 		Update update = conn.prepareUpdate(QueryLanguage.SPARQL, query);
 		update.execute();
-		Nanopub nanopub = new NanopubImpl(sailRepo, new URIImpl("http://bio2rdf.org/drugbank_resource:DB00247_BE0000650_nanopub"));
-		nanopub = MakeTrustyNanopub.transform(nanopub);
-		logger.info(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG));
+	}
+
+	private void writeData() throws Exception {
+		SailRepositoryConnection conn = sailRepo.getConnection();
+		int count = 0;
+		RepositoryResult<Resource> result = conn.getContextIDs();
+		while (result.hasNext()) {
+			Resource graph = result.next();
+			RepositoryResult<Statement> r = conn.getStatements(null, RDF.TYPE, Nanopub.NANOPUB_TYPE_URI, false, graph);
+			if (!r.hasNext()) continue;
+			Resource nanopubId = r.next().getSubject();
+			if (!(nanopubId instanceof URI)) {
+				logger.error("Nanopub ID has to be a URI: " + nanopubId);
+				continue;
+			}
+			count++;
+			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId);
+			nanopub = MakeTrustyNanopub.transform(nanopub);
+			System.out.println(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n");
+		}
+		result.close();
 		logger.info("size: " + sailRepo.getConnection().size());
+		logger.info("count: " + count);
+	}
+
+	private void clearData() throws RepositoryException {
 		sailRepo.getConnection().clear();
 	}
 
