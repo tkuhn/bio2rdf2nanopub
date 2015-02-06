@@ -1,11 +1,18 @@
 package ch.tkuhn.bio2rdf2nanopub;
 
-import org.openrdf.model.impl.StatementImpl;
+import java.io.File;
+import java.util.Scanner;
+
+import org.nanopub.Nanopub;
+import org.nanopub.NanopubImpl;
+import org.nanopub.NanopubUtils;
+import org.nanopub.trusty.MakeTrustyNanopub;
 import org.openrdf.model.impl.URIImpl;
-import org.openrdf.repository.RepositoryException;
+import org.openrdf.query.QueryLanguage;
+import org.openrdf.query.Update;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.repository.sail.SailRepositoryConnection;
-import org.openrdf.sail.SailException;
+import org.openrdf.rio.RDFFormat;
 import org.openrdf.sail.memory.MemoryStore;
 
 public class Run {
@@ -18,18 +25,27 @@ public class Run {
 			System.exit(1);
 		}
 		System.out.println("success");
+		System.exit(0);
 	}
 
-	private static void test() throws SailException, RepositoryException {
+	private static void test() throws Exception {
 		MemoryStore store = new MemoryStore();
 		store.initialize();
-		SailRepositoryConnection conn = new SailRepository(store).getConnection();
-		conn.add(new StatementImpl(
-				new URIImpl("http://example.org/s"),
-				new URIImpl("http://example.org/p"),
-				new URIImpl("http://example.org/o")
-			), new URIImpl("http://example.org/g"));
-		System.err.println(conn.getStatements(null, null, null, false, new URIImpl("http://example.org/g")).next());
+		SailRepository sailRepo = new SailRepository(store);
+		SailRepositoryConnection conn = sailRepo.getConnection();
+		File file = new File(Run.class.getClassLoader().getResource("drugbank.sparql").getFile());
+		Scanner scanner = new Scanner(file);
+		String query = "";
+		while (scanner.hasNextLine()) {
+			query += scanner.nextLine() + "\n";
+		}
+		scanner.close();
+		Update update = conn.prepareUpdate(QueryLanguage.SPARQL, query);
+		update.execute();
+		Nanopub nanopub = new NanopubImpl(sailRepo, new URIImpl("http://bio2rdf.org/drugbank_resource:DB00247_BE0000650_nanopub"));
+		nanopub = MakeTrustyNanopub.transform(nanopub);
+		System.err.println(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG));
+		System.err.println(sailRepo.getConnection().size());
 	}
 
 }

@@ -66,9 +66,9 @@ where{
     BIND(STRAFTER(str(?association),"http://bio2rdf.org/") AS ?id)
     BIND(iri(concat('http://tw.rpi.edu/redrugs/', str(?id))) as ?base)
   	BIND(iri(concat(str(?association),"_nanopub")) as ?nanopub)
-  	BIND(iri(concat(str(?association),"_head")) as ?headGraph)
-	BIND(iri(concat(str(?nanopub),"_assertion")) as ?assertionGraph)
-	BIND(iri(concat(str(?nanopub),"_provenance")) as ?provenanceGraph)
-	BIND(iri(concat(str(?nanopub),"_publicationInfo")) as ?publicationInfoGraph)
+  	BIND(iri(concat(str(?nanopub),"head")) as ?headGraph)
+	BIND(iri(concat(str(?nanopub),"assertion")) as ?assertionGraph)
+	BIND(iri(concat(str(?nanopub),"provenance")) as ?provenanceGraph)
+	BIND(iri(concat(str(?nanopub),"publicationInfo")) as ?publicationInfoGraph)
 	BIND(NOW() as ?now)
 }
