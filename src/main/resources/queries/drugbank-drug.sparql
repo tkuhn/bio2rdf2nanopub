@@ -23,20 +23,17 @@ insert {
     ?assertionGraph has-source: ?dataset .
   }
   graph ?publicationInfoGraph {
-    ?nanopub pav:authoredBy <http://tw.rpi.edu> ;
-    pav:createdBy <http://tw.rpi.edu> ;
-    dcterms:created ?now ;
-    dcterms:rights <http://opendatacommons.org/licenses/odbl/1.0/> ; #which license to use ?
-    dcterms:rightsHolder <http://tw.rpi.edu> .
+    # TODO: author/creator?
+    ?nanopub dcterms:created ?now .
+    # TODO: license and rights holder?
   }
 } where {
-  { service <http://cu.drugbank.bio2rdf.org/sparql> {
-      select distinct *{
-          ?drug a dv:Drug .
-          optional { ?drug dv:manufacturer ?manufacturer . }
-          # TODO: more here
-          ?drug void:inDataset ?dataset .
-      }
+  service <http://cu.drugbank.bio2rdf.org/sparql> {
+    select distinct * {
+      ?drug a dv:Drug .
+      optional { ?drug dv:manufacturer ?manufacturer . }
+      # TODO: more here
+      ?drug void:inDataset ?dataset .
     }
   }
   bind(iri(concat(str(?drug),"_nanopub")) as ?nanopub)
