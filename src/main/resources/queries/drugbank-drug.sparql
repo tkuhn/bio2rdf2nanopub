@@ -16,7 +16,10 @@ insert {
   }
   graph ?assertionGraph	{
     ?drug a dv:Drug .
+    ?drug dcterms:title ?title .
+    ?drug dv:group ?group .
     ?drug dv:manufacturer ?manufacturer .
+    ?drug dv:category ?category .
     # TODO: more here
   }
   graph ?provenanceGraph {
@@ -28,12 +31,15 @@ insert {
     # TODO: license and rights holder?
   }
 } where {
-  service <http://cu.drugbank.bio2rdf.org/sparql> {
+  service <http://localhost:8899/sparql> {
     select distinct * {
       ?drug a dv:Drug .
-      optional { ?drug dv:manufacturer ?manufacturer . }
-      # TODO: more here
+      ?drug dcterms:title ?title .
       ?drug void:inDataset ?dataset .
+      optional { ?drug dv:group ?group . }
+      optional { ?drug dv:manufacturer ?manufacturer . }
+      optional { ?drug dv:category ?category . }
+      # TODO: more here
     }
   }
   bind(iri(concat(str(?drug),"_nanopub")) as ?nanopub)
