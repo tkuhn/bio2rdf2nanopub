@@ -16,7 +16,10 @@ insert {
   }
   graph ?assertionGraph	{
     ?drug a dv:Drug .
+    ?drug rdfs:label ?label .
+    ?drug rdfs:seeAlso ?seealso .
     ?drug dcterms:title ?title .
+    ?drug dcterms:identifier ?identifier .
     ?drug dv:group ?group .
     ?drug dv:manufacturer ?manufacturer .
     ?drug dv:category ?category .
@@ -34,7 +37,10 @@ insert {
   service <http://localhost:8899/sparql> {
     select distinct * {
       ?drug a dv:Drug .
+      ?drug rdfs:label ?label .
+      ?drug rdfs:seeAlso ?seealso .
       ?drug dcterms:title ?title .
+      ?drug dcterms:identifier ?identifier .
       ?drug void:inDataset ?dataset .
       optional { ?drug dv:group ?group . }
       optional { ?drug dv:manufacturer ?manufacturer . }
