@@ -3,7 +3,9 @@ package ch.tkuhn.bio2rdf2nanopub;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import org.nanopub.Nanopub;
@@ -49,8 +51,10 @@ public class Run {
 
 	private static Logger logger = LoggerFactory.getLogger(Run.class);
 
-	private String dataset;
 	private SailRepository sailRepo;
+	private String dataset;
+	private List<String> nsPrefixes;
+	private Map<String,String> namespaces;
 
 	public void run() {
 		try {
@@ -72,14 +76,25 @@ public class Run {
 		MemoryStore store = new MemoryStore();
 		store.initialize();
 		sailRepo = new SailRepository(store);
+		nsPrefixes = new ArrayList<>();
+		namespaces = new HashMap<>();
 	}
+
+	private static final String prefixPattern = "^\\s*(prefix|PREFIX)\\s+([a-zA-Z\\-_]+)\\s*:\\s*<(.*)>\\s*$";
 
 	private void loadData(String dataset) throws Exception {
 		SailRepositoryConnection conn = sailRepo.getConnection();
 		Scanner scanner = new Scanner(getQueryFile(dataset));
 		String query = "";
 		while (scanner.hasNextLine()) {
-			query += scanner.nextLine() + "\n";
+			String line = scanner.nextLine();
+			query += line + "\n";
+			if (line.matches(prefixPattern)) {
+				String prefix = line.replaceFirst(prefixPattern, "$2");
+				String ns = line.replaceFirst(prefixPattern, "$3");
+				nsPrefixes.add(prefix);
+				namespaces.put(prefix, ns);
+			}
 		}
 		scanner.close();
 		Update update = conn.prepareUpdate(QueryLanguage.SPARQL, query);
@@ -105,7 +120,7 @@ public class Run {
 				continue;
 			}
 			count++;
-			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId);
+			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
 			nanopub = MakeTrustyNanopub.transform(nanopub);
 			out.write(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n\n");
 		}
