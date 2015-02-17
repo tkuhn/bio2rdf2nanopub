@@ -6,3 +6,4 @@
 local
 *.bak
 /bin/
+/nanopubs/

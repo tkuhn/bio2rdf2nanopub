@@ -1,6 +1,7 @@
 package ch.tkuhn.bio2rdf2nanopub;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -48,12 +49,14 @@ public class Run {
 
 	private static Logger logger = LoggerFactory.getLogger(Run.class);
 
+	private String dataset;
 	private SailRepository sailRepo;
 
 	public void run() {
 		try {
 			init();
 			for (String dataset : datasets) {
+				this.dataset = dataset;
 				loadData(dataset);
 				writeData();
 				clearData();
@@ -87,6 +90,11 @@ public class Run {
 		SailRepositoryConnection conn = sailRepo.getConnection();
 		int count = 0;
 		RepositoryResult<Resource> result = conn.getContextIDs();
+		File outputFile = new File("nanopubs/" + dataset + ".trig");
+		if (!outputFile.getParentFile().isDirectory()) {
+			outputFile.getParentFile().mkdir();
+		}
+		FileWriter out = new FileWriter(outputFile);
 		while (result.hasNext()) {
 			Resource graph = result.next();
 			RepositoryResult<Statement> r = conn.getStatements(null, RDF.TYPE, Nanopub.NANOPUB_TYPE_URI, false, graph);
@@ -99,9 +107,10 @@ public class Run {
 			count++;
 			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId);
 			nanopub = MakeTrustyNanopub.transform(nanopub);
-			System.out.println(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n");
+			out.write(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n\n");
 		}
 		result.close();
+		out.close();
 		logger.info("size: " + sailRepo.getConnection().size());
 		logger.info("count: " + count);
 	}
