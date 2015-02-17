@@ -1,0 +1,61 @@
+prefix np: <http://www.nanopub.org/nschema#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sio: <http://semanticscience.org/resource/>
+prefix has-source: <http://semanticscience.org/resource/SIO_000253>
+prefix void: <http://rdfs.org/ns/void#>
+prefix pav: <http://purl.org/pav/2.0/>
+prefix dcterms: <http://purl.org/dc/terms/>
+prefix dv: <http://bio2rdf.org/drugbank_vocabulary:>
+
+insert {
+  graph ?headGraph {
+    ?nanopub a np:Nanopublication .
+    ?nanopub np:hasAssertion ?assertionGraph .
+    ?nanopub np:hasProvenance ?provenanceGraph .
+    ?nanopub np:hasPublicationInfo ?publicationInfoGraph .
+  }
+  graph ?assertionGraph	{
+    ?targetrel a dv:Target-Relation .
+    ?targetrel rdfs:label ?label .
+    ?targetrel dcterms:title ?title .
+    ?targetrel dcterms:identifier ?identifier .
+    ?targetrel dv:target ?target .
+    ?targetrel dv:drug ?drug .
+    ?targetrel dv:known-action ?knownaction .
+    ?targetrel dv:action ?action .
+    ?targetrel dv:enzyme ?enzyme .
+    ?targetrel dv:transporter ?transporter .
+  }
+  graph ?provenanceGraph {
+    ?assertionGraph has-source: ?dataset .
+    ?assertionGraph dv:reference ?reference .
+  }
+  graph ?publicationInfoGraph {
+    # TODO: author/creator?
+    ?nanopub dcterms:created ?now .
+    # TODO: license and rights holder?
+  }
+} where {
+  service <http://localhost:8899/sparql> {
+    select distinct * {
+      ?targetrel a dv:Target-Relation .
+      ?targetrel rdfs:label ?label .
+      ?targetrel dcterms:title ?title .
+      ?targetrel dcterms:identifier ?identifier .
+      ?targetrel void:inDataset ?dataset .
+      ?targetrel dv:target ?target .
+      ?targetrel dv:drug ?drug .
+      ?targetrel dv:known-action ?knownaction .
+      optional { ?targetrel dv:reference ?reference . }
+      optional { ?targetrel dv:action ?action . }
+      optional { ?targetrel dv:enzyme ?enzyme . }
+      optional { ?targetrel dv:transporter ?transporter . }
+    }
+  }
+  bind(iri(concat(str(?targetrel),"_nanopub")) as ?nanopub)
+  bind(iri(concat(str(?nanopub),"head")) as ?headGraph)
+  bind(iri(concat(str(?nanopub),"assertion")) as ?assertionGraph)
+  bind(iri(concat(str(?nanopub),"provenance")) as ?provenanceGraph)
+  bind(iri(concat(str(?nanopub),"publicationInfo")) as ?publicationInfoGraph)
+  bind(now() as ?now)
+}
