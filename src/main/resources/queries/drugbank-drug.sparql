@@ -6,6 +6,7 @@ prefix has-source: <http://semanticscience.org/resource/SIO_000253>
 prefix void: <http://rdfs.org/ns/void#>
 prefix pav: <http://purl.org/pav/2.0/>
 prefix dcterms: <http://purl.org/dc/terms/>
+prefix v: <http://bio2rdf.org/bio2rdf_vocabulary:>
 prefix d: <http://bio2rdf.org/drugbank:>
 prefix dv: <http://bio2rdf.org/drugbank_vocabulary:>
 prefix dr: <http://bio2rdf.org/drugbank_resource:>
@@ -22,10 +23,30 @@ insert {
     ?drug rdfs:label ?label .
     ?drug rdfs:seeAlso ?seealso .
     ?drug dcterms:title ?title .
+    ?drug dcterms:description ?desc .
     ?drug dcterms:identifier ?identifier .
     ?drug dv:group ?group .
     ?drug dv:manufacturer ?manufacturer .
     ?drug dv:category ?category .
+    ?drug v:x-identifiers.org ?xidentifiersorg .
+    ?drug dv:x-ahfs ?xahfs .
+    ?drug dv:x-atc ?xatc .
+    ?drug dv:x-bindingdb ?xbindingdb .
+    ?drug dv:x-cas ?xcas .
+    ?drug dv:x-chebi ?xchebi .
+    ?drug dv:x-chemspider ?xchemspider .
+    ?drug dv:x-dpd ?xdpd .
+    ?drug dv:x-genbank ?xgenbank .
+    ?drug dv:x-gtp ?xgtp .
+    ?drug dv:x-iuphar ?xiuphar .
+    ?drug dv:x-kegg ?xkegg .
+    ?drug dv:x-ndc ?xndc .
+    ?drug dv:x-pdb ?xpdb .
+    ?drug dv:x-pharmgkb ?xpharmgkb .
+    ?drug dv:x-pubchemcompound ?xpubchemcompound .
+    ?drug dv:x-pubchemsubstance ?xpubchemsubstance .
+    ?drug dv:x-uniprot ?xuniprot .
+    ?drug dv:x-wikipedia ?xwikipedia .
     # TODO: more here
   }
   graph ?provenanceGraph {
@@ -43,11 +64,30 @@ insert {
       ?drug rdfs:label ?label .
       ?drug rdfs:seeAlso ?seealso .
       ?drug dcterms:title ?title .
+      optional { ?drug dcterms:description ?desc . }
       ?drug dcterms:identifier ?identifier .
       ?drug void:inDataset ?dataset .
+      ?drug v:x-identifiers.org ?xidentifiersorg .
       optional { ?drug dv:group ?group . }
       optional { ?drug dv:manufacturer ?manufacturer . }
-      optional { ?drug dv:category ?category . }
+      optional { ?drug dv:x-ahfs ?xahfs . }
+      optional { ?drug dv:x-atc ?xatc . }
+      optional { ?drug dv:x-bindingdb ?xbindingdb . }
+      optional { ?drug dv:x-cas ?xcas . }
+      optional { ?drug dv:x-chebi ?xchebi . }
+      optional { ?drug dv:x-chemspider ?xchemspider . }
+      optional { ?drug dv:x-dpd ?xdpd . }
+      optional { ?drug dv:x-genbank ?xgenbank . }
+      optional { ?drug dv:x-gtp ?xgtp . }
+      optional { ?drug dv:x-iuphar ?xiuphar . }
+      optional { ?drug dv:x-kegg ?xkegg . }
+      optional { ?drug dv:x-ndc ?xndc . }
+      optional { ?drug dv:x-pdb ?xpdb . }
+      optional { ?drug dv:x-pharmgkb ?xpharmgkb . }
+      optional { ?drug dv:x-pubchemcompound ?xpubchemcompound . }
+      optional { ?drug dv:x-pubchemsubstance ?xpubchemsubstance . }
+      optional { ?drug dv:x-uniprot ?xuniprot . }
+      optional { ?drug dv:x-wikipedia ?xwikipedia . }
       # TODO: more here
     }
   }
