@@ -1,0 +1,53 @@
+prefix np: <http://www.nanopub.org/nschema#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sio: <http://semanticscience.org/resource/>
+prefix has-source: <http://semanticscience.org/resource/SIO_000253>
+prefix void: <http://rdfs.org/ns/void#>
+prefix pav: <http://purl.org/pav/2.0/>
+prefix dcterms: <http://purl.org/dc/terms/>
+prefix dv: <http://bio2rdf.org/drugbank_vocabulary:>
+
+insert {
+  graph ?headGraph {
+    ?nanopub a np:Nanopublication .
+    ?nanopub np:hasAssertion ?assertionGraph .
+    ?nanopub np:hasProvenance ?provenanceGraph .
+    ?nanopub np:hasPublicationInfo ?publicationInfoGraph .
+  }
+  graph ?assertionGraph	{
+    ?target a dv:Target .
+    ?target rdfs:label ?label .
+    ?target dcterms:title ?title .
+    ?target dcterms:identifier ?identifier .
+    ?target dv:name ?name .
+    ?target dv:organism ?organism .
+    # TODO: more here
+  }
+  graph ?provenanceGraph {
+    ?assertionGraph has-source: ?dataset .
+  }
+  graph ?publicationInfoGraph {
+    # TODO: author/creator?
+    ?nanopub dcterms:created ?now .
+    # TODO: license and rights holder?
+  }
+} where {
+  service <http://localhost:8899/sparql> {
+    select distinct * {
+      ?target a dv:Target .
+      ?target rdfs:label ?label .
+      ?target dcterms:title ?title .
+      ?target dcterms:identifier ?identifier .
+      ?target void:inDataset ?dataset .
+      ?target dv:name ?name .
+      optional { ?target dv:organism ?organism . }
+      # TODO: more here
+    }
+  }
+  bind(iri(concat(str(?target),"_nanopub")) as ?nanopub)
+  bind(iri(concat(str(?nanopub),"head")) as ?headGraph)
+  bind(iri(concat(str(?nanopub),"assertion")) as ?assertionGraph)
+  bind(iri(concat(str(?nanopub),"provenance")) as ?provenanceGraph)
+  bind(iri(concat(str(?nanopub),"publicationInfo")) as ?publicationInfoGraph)
+  bind(now() as ?now)
+}
