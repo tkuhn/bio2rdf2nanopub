@@ -25,8 +25,20 @@ insert {
     ?drug dcterms:title ?title .
     ?drug dcterms:description ?desc .
     ?drug dcterms:identifier ?identifier .
+    ?drug dv:drugbank-id ?drugbankid .
     ?drug dv:group ?group .
     ?drug dv:manufacturer ?manufacturer .
+      ?manufacturer a dv:Manufacturer .
+      ?manufacturer dcterms:identifier ?manufacturerid .
+      ?manufacturer dcterms:title ?manufacturertitle .
+      ?manufacturer rdf:value ?manufacturervalue .
+      ?manufacturer rdfs:label ?manufacturerlabel .
+    ?drug dv:manufacturer ?brand .
+      ?brand a dv:Brand .
+      ?brand dcterms:identifier ?brandid .
+      ?brand dcterms:title ?brandtitle .
+      ?brand rdfs:label ?brandlabel .
+      ?brand dv:company ?brandcompany .
     ?drug dv:category ?category .
     ?drug v:x-identifiers.org ?xidentifiersorg .
     ?drug dv:x-ahfs ?xahfs .
@@ -66,10 +78,26 @@ insert {
       ?drug dcterms:title ?title .
       optional { ?drug dcterms:description ?desc . }
       ?drug dcterms:identifier ?identifier .
+      ?drug dv:drugbank-id ?drugbankid .
       ?drug void:inDataset ?dataset .
       ?drug v:x-identifiers.org ?xidentifiersorg .
       optional { ?drug dv:group ?group . }
-      optional { ?drug dv:manufacturer ?manufacturer . }
+      optional {
+        ?drug dv:manufacturer ?manufacturer .
+        ?manufacturer a dv:Manufacturer .
+        ?manufacturer dcterms:identifier ?manufacturerid .
+        ?manufacturer dcterms:title ?manufacturertitle .
+        ?manufacturer rdf:value ?manufacturervalue .
+        ?manufacturer rdfs:label ?manufacturerlabel .
+      }
+      optional {
+        ?drug dv:brand ?brand .
+        ?brand a dv:Brand .
+        ?brand dcterms:identifier ?brandid .
+        ?brand dcterms:title ?brandtitle .
+        ?brand rdfs:label ?brandlabel .
+        optional { ?brand dv:company ?brandcompany . }
+      }
       optional { ?drug dv:x-ahfs ?xahfs . }
       optional { ?drug dv:x-atc ?xatc . }
       optional { ?drug dv:x-bindingdb ?xbindingdb . }
