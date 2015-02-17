@@ -111,8 +111,8 @@ public class Run {
 		}
 		result.close();
 		out.close();
-		logger.info("size: " + sailRepo.getConnection().size());
-		logger.info("count: " + count);
+		logger.info("number of triples: " + sailRepo.getConnection().size());
+		logger.info("number of nanopublications: " + count);
 	}
 
 	private void clearData() throws RepositoryException {
