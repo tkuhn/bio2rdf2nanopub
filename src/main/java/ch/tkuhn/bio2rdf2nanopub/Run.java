@@ -120,8 +120,7 @@ public class Run {
 			close(in1);
 			close(in2);
 		}
-		//System.err.println("version: " + conf.getProperty("version"));
-		//System.err.println("build date: " + conf.getProperty("build-date"));
+		//System.err.println(conf.getProperty("git.remote.origin.url"));
 	}
 
 	private void close(InputStream st) {
