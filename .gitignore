@@ -4,6 +4,7 @@
 /target
 /keys
 /scratch
+local.*
 local
 *.bak
 /bin/

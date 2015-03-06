@@ -3,12 +3,15 @@ package ch.tkuhn.bio2rdf2nanopub;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.zip.GZIPOutputStream;
 
@@ -58,6 +61,8 @@ public class Run {
 
 	private static Logger logger = LoggerFactory.getLogger(Run.class);
 
+	private Properties conf;
+
 	private SailRepository sailRepo;
 	private String dataset;
 	private List<String> nsPrefixes;
@@ -92,6 +97,39 @@ public class Run {
 			logger.error("No key pair found. Specify one with '-k' or " +
 				"run 'path/to/nanopub-java/scripts/MakeKeys.sh -f keys/bio2rdf2nanopub' to generate one.");
 			throw ex;
+		}
+		conf = new Properties();
+		InputStream in1 = null;
+		InputStream in2 = null;
+		try {
+			in1 = Run.class.getResourceAsStream("conf.properties");
+			try {
+				conf.load(in1);
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+			in2 = Run.class.getResourceAsStream("local.conf.properties");
+			if (in2 != null) {
+				try {
+					conf.load(in2);
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+		} finally {
+			close(in1);
+			close(in2);
+		}
+		//System.err.println("version: " + conf.getProperty("version"));
+		//System.err.println("build date: " + conf.getProperty("build-date"));
+	}
+
+	private void close(InputStream st) {
+		if (st == null) return;
+		try {
+			st.close();
+		} catch (IOException ex) {
+			logger.error(ex.getMessage(), ex);
 		}
 	}
 
