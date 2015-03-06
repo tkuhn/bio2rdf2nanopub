@@ -1,17 +1,21 @@
 package ch.tkuhn.bio2rdf2nanopub;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.zip.GZIPOutputStream;
 
 import org.nanopub.Nanopub;
 import org.nanopub.NanopubImpl;
 import org.nanopub.NanopubUtils;
-import org.nanopub.trusty.MakeTrustyNanopub;
+import org.nanopub.extra.security.SignNanopub;
 import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
@@ -36,6 +40,9 @@ public class Run {
 	@Parameter(description = "datasets", required = true)
 	private List<String> datasets = new ArrayList<String>();
 
+	@Parameter(names = "-k", description = "keyfile")
+	private String keyFile = "keys/bio2rdf2nanopub";
+
 	public static final void main(String[] args) {
 		Run obj = new Run();
 		JCommander jc = new JCommander(obj);
@@ -55,6 +62,7 @@ public class Run {
 	private String dataset;
 	private List<String> nsPrefixes;
 	private Map<String,String> namespaces;
+	private KeyPair key;
 
 	public void run() {
 		try {
@@ -78,6 +86,13 @@ public class Run {
 		sailRepo = new SailRepository(store);
 		nsPrefixes = new ArrayList<>();
 		namespaces = new HashMap<>();
+		try {
+			key = SignNanopub.loadKey(keyFile);
+		} catch (FileNotFoundException ex) {
+			logger.error("No key pair found. Specify one with '-k' or " +
+				"run 'path/to/nanopub-java/scripts/MakeKeys.sh -f keys/bio2rdf2nanopub' to generate one.");
+			throw ex;
+		}
 	}
 
 	private static final String prefixPattern = "^\\s*(prefix|PREFIX)\\s+([a-zA-Z\\-_]+)\\s*:\\s*<(.*)>\\s*$";
@@ -105,11 +120,11 @@ public class Run {
 		SailRepositoryConnection conn = sailRepo.getConnection();
 		int count = 0;
 		RepositoryResult<Resource> result = conn.getContextIDs();
-		File outputFile = new File("nanopubs/" + dataset + ".trig");
+		File outputFile = new File("nanopubs/" + dataset + ".trig.gz");
 		if (!outputFile.getParentFile().isDirectory()) {
 			outputFile.getParentFile().mkdir();
 		}
-		FileWriter out = new FileWriter(outputFile);
+		OutputStreamWriter out = new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outputFile)));
 		while (result.hasNext()) {
 			Resource graph = result.next();
 			RepositoryResult<Statement> r = conn.getStatements(null, RDF.TYPE, Nanopub.NANOPUB_TYPE_URI, false, graph);
@@ -121,7 +136,7 @@ public class Run {
 			}
 			count++;
 			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
-			nanopub = MakeTrustyNanopub.transform(nanopub);
+			nanopub = SignNanopub.signAndTransform(nanopub, key);
 			out.write(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n\n");
 		}
 		result.close();

@@ -2,6 +2,7 @@
 /.*
 /classpath.txt
 /target
+/keys
 /scratch
 local
 *.bak
