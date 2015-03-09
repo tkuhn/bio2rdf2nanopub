@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.net.URL;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,7 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
+
+import net.trustyuri.TrustyUriUtils;
 
 import org.nanopub.Nanopub;
 import org.nanopub.NanopubImpl;
@@ -22,6 +26,7 @@ import org.nanopub.extra.security.SignNanopub;
 import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
+import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.Update;
@@ -63,11 +68,14 @@ public class Run {
 
 	private Properties conf;
 
+	private URI codebaseUri, versionUri, instanceUri, processUri;
+
 	private SailRepository sailRepo;
 	private String dataset;
 	private List<String> nsPrefixes;
 	private Map<String,String> namespaces;
 	private KeyPair key;
+	private UUID uuid;
 
 	public void run() {
 		try {
@@ -120,7 +128,30 @@ public class Run {
 			close(in1);
 			close(in2);
 		}
-		//System.err.println(conf.getProperty("git.remote.origin.url"));
+		codebaseUri = makeUri(conf.getProperty("bot-codebase-uri"));
+		System.err.println("Codebase URI: " + codebaseUri);
+		String commitId = conf.getProperty("git.commit.id");
+		if (!commitId.matches("[0-9a-f]{40}")) {
+			throw new RuntimeException("Invalid git commit identifier: " + commitId);
+		}
+		versionUri = makeUri(conf.getProperty("bot-version-uri-prefix") + conf.getProperty("git.commit.id"));
+		System.err.println("Version URI:  " + versionUri);
+		String publicKeyShort = TrustyUriUtils.getBase64(key.getPublic().getEncoded()).substring(0, 32);
+		instanceUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort);
+		System.err.println("Instance URI: " + instanceUri);
+		uuid = UUID.randomUUID();
+		processUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort + "." + uuid);
+		System.err.println("Process URI:  " + processUri);
+	}
+
+	private URI makeUri(String uriString) {
+		try {
+			// throw exceptions if URI is not well-formed:
+			new URL(uriString).toURI();
+		} catch (Exception ex) {
+			throw new RuntimeException("Error creating URI: " + uriString, ex);
+		}
+		return new URIImpl(uriString);
 	}
 
 	private void close(InputStream st) {
