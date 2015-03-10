@@ -4,7 +4,6 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix sio: <http://semanticscience.org/resource/>
 prefix has-source: <http://semanticscience.org/resource/SIO_000253>
 prefix void: <http://rdfs.org/ns/void#>
-prefix pav: <http://purl.org/pav/2.0/>
 prefix dcterms: <http://purl.org/dc/terms/>
 prefix d: <http://bio2rdf.org/drugbank:>
 prefix dv: <http://bio2rdf.org/drugbank_vocabulary:>

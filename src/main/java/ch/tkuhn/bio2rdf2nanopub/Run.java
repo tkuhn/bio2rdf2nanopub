@@ -26,7 +26,11 @@ import org.nanopub.extra.security.SignNanopub;
 import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
+import org.openrdf.model.Value;
+import org.openrdf.model.impl.LiteralImpl;
+import org.openrdf.model.impl.StatementImpl;
 import org.openrdf.model.impl.URIImpl;
+import org.openrdf.model.vocabulary.DCTERMS;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.Update;
@@ -48,7 +52,7 @@ public class Run {
 	@Parameter(description = "datasets", required = true)
 	private List<String> datasets = new ArrayList<String>();
 
-	@Parameter(names = "-k", description = "keyfile")
+	@Parameter(names = "-k", description = "Key file")
 	private String keyFile = "keys/bio2rdf2nanopub";
 
 	public static final void main(String[] args) {
@@ -64,16 +68,25 @@ public class Run {
 		System.exit(0);
 	}
 
+	private static final URI provWasGeneratedBy = new URIImpl("http://www.w3.org/ns/prov#wasGeneratedBy");
+	private static final URI provWasAssociatedWith = new URIImpl("http://www.w3.org/ns/prov#wasAssociatedWith");
+	private static final URI provSpecializationOf = new URIImpl("http://www.w3.org/ns/prov#specializationOf");
+	private static final URI pavVersion = new URIImpl("http://purl.org/pav/version");
+	private static final URI dctIdentifier = new URIImpl("http://purl.org/dc/terms/identifier");
+
 	private static Logger logger = LoggerFactory.getLogger(Run.class);
 
 	private Properties conf;
 
 	private URI codebaseUri, versionUri, instanceUri, processUri;
+	private String version;
 
 	private SailRepository sailRepo;
 	private String dataset;
 	private List<String> nsPrefixes;
 	private Map<String,String> namespaces;
+	private List<String> nsPrefixesPreload;
+	private Map<String,String> namespacesPreload;
 	private KeyPair key;
 	private UUID uuid;
 
@@ -99,6 +112,11 @@ public class Run {
 		sailRepo = new SailRepository(store);
 		nsPrefixes = new ArrayList<>();
 		namespaces = new HashMap<>();
+		nsPrefixesPreload = new ArrayList<>();
+		namespacesPreload = new HashMap<>();
+		addNamespace("prov", "http://www.w3.org/ns/prov#");
+		addNamespace("dct", "http://purl.org/dc/terms/");
+		addNamespace("pav", "http://purl.org/pav/");
 		try {
 			key = SignNanopub.loadKey(keyFile);
 		} catch (FileNotFoundException ex) {
@@ -130,18 +148,30 @@ public class Run {
 		}
 		codebaseUri = makeUri(conf.getProperty("bot-codebase-uri"));
 		System.err.println("Codebase URI: " + codebaseUri);
-		String commitId = conf.getProperty("git.commit.id");
-		if (!commitId.matches("[0-9a-f]{40}")) {
-			throw new RuntimeException("Invalid git commit identifier: " + commitId);
+		addNamespace("bot-codebase", codebaseUri.toString());
+		version = conf.getProperty("git.commit.id");
+		if (!version.matches("[0-9a-f]{40}")) {
+			throw new RuntimeException("Invalid git commit identifier: " + version);
 		}
-		versionUri = makeUri(conf.getProperty("bot-version-uri-prefix") + conf.getProperty("git.commit.id"));
+		versionUri = makeUri(conf.getProperty("bot-version-uri-prefix") + version);
 		System.err.println("Version URI:  " + versionUri);
+		addNamespace("bot-version", versionUri.toString());
 		String publicKeyShort = TrustyUriUtils.getBase64(key.getPublic().getEncoded()).substring(0, 32);
+		if (conf.getProperty("bot-instance-uri-prefix") == null) {
+			throw new RuntimeException("Property bot-instance-uri-prefix not found: Set it in local.conf.properties");
+		}
 		instanceUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort);
 		System.err.println("Instance URI: " + instanceUri);
+		addNamespace("bot-instance", instanceUri.toString());
 		uuid = UUID.randomUUID();
 		processUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort + "." + uuid);
 		System.err.println("Process URI:  " + processUri);
+		addNamespace("bot-process", processUri.toString());
+	}
+
+	private void addNamespace(String prefix, String namespace) {
+		nsPrefixesPreload.add(prefix);
+		namespacesPreload.put(prefix, namespace);
 	}
 
 	private URI makeUri(String uriString) {
@@ -166,6 +196,10 @@ public class Run {
 	private static final String prefixPattern = "^\\s*(prefix|PREFIX)\\s+([a-zA-Z\\-_]+)\\s*:\\s*<(.*)>\\s*$";
 
 	private void loadData(String dataset) throws Exception {
+		nsPrefixes.addAll(nsPrefixesPreload);
+		for (String prefix : namespacesPreload.keySet()) {
+			namespaces.put(prefix, namespacesPreload.get(prefix));
+		}
 		SailRepositoryConnection conn = sailRepo.getConnection();
 		Scanner scanner = new Scanner(getQueryFile(dataset));
 		String query = "";
@@ -203,8 +237,15 @@ public class Run {
 				continue;
 			}
 			count++;
+			Nanopub rawNanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
+			addPubinfoStatement(rawNanopub, nanopubId, provWasGeneratedBy, processUri);
+			addPubinfoStatement(rawNanopub, processUri, provWasAssociatedWith, instanceUri);
+			addPubinfoStatement(rawNanopub, processUri, dctIdentifier, new LiteralImpl(uuid.toString()));
+			addPubinfoStatement(rawNanopub, instanceUri, provSpecializationOf, versionUri);
+			addPubinfoStatement(rawNanopub, versionUri, DCTERMS.IS_VERSION_OF, codebaseUri);
+			addPubinfoStatement(rawNanopub, versionUri, pavVersion, new LiteralImpl(version));
 			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
-			nanopub = SignNanopub.signAndTransform(nanopub, key);
+			nanopub = SignNanopub.signAndTransform(nanopub, key, instanceUri);
 			out.write(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n\n");
 		}
 		result.close();
@@ -213,8 +254,14 @@ public class Run {
 		logger.info("number of nanopublications: " + count);
 	}
 
+	private void addPubinfoStatement(Nanopub rawNanopub, Resource subj, URI pred, Value obj) throws Exception {
+		sailRepo.getConnection().add(new StatementImpl(subj, pred, obj), rawNanopub.getPubinfoUri());
+	}
+
 	private void clearData() throws RepositoryException {
 		sailRepo.getConnection().clear();
+		nsPrefixes.clear();
+		namespaces.clear();
 	}
 
 	private static File getQueryFile(String dataset) {
