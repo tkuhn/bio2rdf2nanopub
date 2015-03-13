@@ -70,6 +70,7 @@ public class Run {
 
 	private static final URI provWasGeneratedBy = new URIImpl("http://www.w3.org/ns/prov#wasGeneratedBy");
 	private static final URI provWasAssociatedWith = new URIImpl("http://www.w3.org/ns/prov#wasAssociatedWith");
+	private static final URI provWasAttributedTo = new URIImpl("http://www.w3.org/ns/prov#wasAttributedTo");
 	private static final URI provSpecializationOf = new URIImpl("http://www.w3.org/ns/prov#specializationOf");
 	private static final URI pavVersion = new URIImpl("http://purl.org/pav/version");
 	private static final URI dctIdentifier = new URIImpl("http://purl.org/dc/terms/identifier");
@@ -79,6 +80,7 @@ public class Run {
 	private Properties conf;
 
 	private URI codebaseUri, versionUri, instanceUri, processUri;
+	private List<URI> versionCreators, instanceCreators;
 	private String version;
 
 	private SailRepository sailRepo;
@@ -117,6 +119,7 @@ public class Run {
 		addNamespace("prov", "http://www.w3.org/ns/prov#");
 		addNamespace("dct", "http://purl.org/dc/terms/");
 		addNamespace("pav", "http://purl.org/pav/");
+		addNamespace("orcid", "http://orcid.org/");
 		try {
 			key = SignNanopub.loadKey(keyFile);
 		} catch (FileNotFoundException ex) {
@@ -156,6 +159,10 @@ public class Run {
 		versionUri = makeUri(conf.getProperty("bot-version-uri-prefix") + version);
 		System.err.println("Version URI:  " + versionUri);
 		addNamespace("bot-version", versionUri.toString());
+		versionCreators = new ArrayList<>();
+		for (String c : conf.getProperty("bot-version-developer-orcids").split(" ")) {
+			versionCreators.add(new URIImpl("http://orcid.org/" + c));
+		}
 		String publicKeyShort = TrustyUriUtils.getBase64(key.getPublic().getEncoded()).substring(0, 32);
 		if (conf.getProperty("bot-instance-uri-prefix") == null) {
 			throw new RuntimeException("Property bot-instance-uri-prefix not found: Set it in local.conf.properties");
@@ -163,6 +170,10 @@ public class Run {
 		instanceUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort);
 		System.err.println("Instance URI: " + instanceUri);
 		addNamespace("bot-instance", instanceUri.toString());
+		instanceCreators = new ArrayList<>();
+		for (String c : conf.getProperty("bot-instance-creator-orcids").split(" ")) {
+			instanceCreators.add(new URIImpl("http://orcid.org/" + c));
+		}
 		uuid = UUID.randomUUID();
 		processUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort + "." + uuid);
 		System.err.println("Process URI:  " + processUri);
@@ -242,8 +253,14 @@ public class Run {
 			addPubinfoStatement(rawNanopub, processUri, provWasAssociatedWith, instanceUri);
 			addPubinfoStatement(rawNanopub, processUri, dctIdentifier, new LiteralImpl(uuid.toString()));
 			addPubinfoStatement(rawNanopub, instanceUri, provSpecializationOf, versionUri);
+			for (URI c : instanceCreators) {
+				addPubinfoStatement(rawNanopub, instanceUri, provWasAttributedTo, c);
+			}
 			addPubinfoStatement(rawNanopub, versionUri, DCTERMS.IS_VERSION_OF, codebaseUri);
 			addPubinfoStatement(rawNanopub, versionUri, pavVersion, new LiteralImpl(version));
+			for (URI c : versionCreators) {
+				addPubinfoStatement(rawNanopub, versionUri, provWasAttributedTo, c);
+			}
 			Nanopub nanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
 			nanopub = SignNanopub.signAndTransform(nanopub, key, instanceUri);
 			out.write(NanopubUtils.writeToString(nanopub, RDFFormat.TRIG) + "\n\n");
