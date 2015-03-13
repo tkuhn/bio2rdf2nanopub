@@ -55,6 +55,9 @@ public class Run {
 	@Parameter(names = "-k", description = "Key file")
 	private String keyFile = "keys/bio2rdf2nanopub";
 
+	@Parameter(names = "-s", description = "ORCID identifier of person who starts the bot process")
+	private String startedByOrcid;
+
 	public static final void main(String[] args) {
 		Run obj = new Run();
 		JCommander jc = new JCommander(obj);
@@ -71,6 +74,7 @@ public class Run {
 	private static final URI provWasGeneratedBy = new URIImpl("http://www.w3.org/ns/prov#wasGeneratedBy");
 	private static final URI provWasAssociatedWith = new URIImpl("http://www.w3.org/ns/prov#wasAssociatedWith");
 	private static final URI provWasAttributedTo = new URIImpl("http://www.w3.org/ns/prov#wasAttributedTo");
+	private static final URI provWasStartedBy = new URIImpl("http://www.w3.org/ns/prov#wasStartedBy");
 	private static final URI provSpecializationOf = new URIImpl("http://www.w3.org/ns/prov#specializationOf");
 	private static final URI pavVersion = new URIImpl("http://purl.org/pav/version");
 	private static final URI dctIdentifier = new URIImpl("http://purl.org/dc/terms/identifier");
@@ -252,6 +256,10 @@ public class Run {
 			addPubinfoStatement(rawNanopub, nanopubId, provWasGeneratedBy, processUri);
 			addPubinfoStatement(rawNanopub, processUri, provWasAssociatedWith, instanceUri);
 			addPubinfoStatement(rawNanopub, processUri, dctIdentifier, new LiteralImpl(uuid.toString()));
+			if (startedByOrcid != null) {
+				URI s = new URIImpl("http://orcid.org/" + startedByOrcid);
+				addPubinfoStatement(rawNanopub, processUri, provWasStartedBy, s);
+			}
 			addPubinfoStatement(rawNanopub, instanceUri, provSpecializationOf, versionUri);
 			for (URI c : instanceCreators) {
 				addPubinfoStatement(rawNanopub, instanceUri, provWasAttributedTo, c);
