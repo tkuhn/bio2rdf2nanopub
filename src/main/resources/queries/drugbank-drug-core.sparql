@@ -2,13 +2,16 @@ prefix np: <http://www.nanopub.org/nschema#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix sio: <http://semanticscience.org/resource/>
-prefix has-source: <http://semanticscience.org/resource/SIO_000253>
 prefix void: <http://rdfs.org/ns/void#>
 prefix dcterms: <http://purl.org/dc/terms/>
+prefix dctypes: <http://purl.org/dc/dcmitype/>
 prefix v: <http://bio2rdf.org/bio2rdf_vocabulary:>
 prefix d: <http://bio2rdf.org/drugbank:>
 prefix dv: <http://bio2rdf.org/drugbank_vocabulary:>
 prefix dr: <http://bio2rdf.org/drugbank_resource:>
+prefix dcat: <http://www.w3.org/ns/dcat#>
+prefix prov: <http://www.w3.org/ns/prov#>
+prefix pav: <http://purl.org/pav/>
 
 insert {
   graph ?headGraph {
@@ -50,10 +53,15 @@ insert {
     ?drug dv:x-wikipedia ?xwikipedia .
   }
   graph ?provenanceGraph {
-    ?assertionGraph has-source: ?dataset .
+    ?assertionGraph prov:wasDerivedFrom ?distribution .
+    ?dataset dcat:distribution ?distribution .
+    ?distribution dcterms:created ?distributionCreated .
+    ?distribution prov:wasDerivedFrom ?distributionSource .
+    # TODO: fix this:
+    #?distributionSource pav:retrievedOn ?distributionSourceRetrieved .
+    ?distributionSource prov:wasAttributedTo ?distributionSourcePublisher .
   }
   graph ?publicationInfoGraph {
-    # TODO: author/creator?
     ?nanopub dcterms:created ?now .
     # TODO: license and rights holder?
   }
@@ -62,7 +70,6 @@ insert {
     select distinct * {
       ?drug a dv:Drug .
       ?drug rdfs:label ?label .
-      ?drug void:inDataset ?dataset .
       ?drug v:identifier ?id .
       ?drug v:namespace ?ns .
       ?drug v:uri ?uri .
@@ -90,6 +97,12 @@ insert {
       optional { ?drug dv:x-pubchemsubstance ?xpubchemsubstance . }
       optional { ?drug dv:x-uniprot ?xuniprot . }
       optional { ?drug dv:x-wikipedia ?xwikipedia . }
+      ?drug void:inDataset ?dataset .
+      ?dataset dcat:distribution ?distribution .
+      ?distribution dcterms:created ?distributionCreated .
+      ?distribution dcterms:source ?distributionSource .
+      ?distributionSource pav:retrievedOn ?distributionSourceRetrieved .
+      ?distributionSource dcterms:publisher ?distributionSourcePublisher .
     }
   }
   bind(iri(concat(str(?drug),"_nanopub")) as ?nanopub)
