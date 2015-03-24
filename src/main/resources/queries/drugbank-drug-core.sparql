@@ -56,13 +56,13 @@ insert {
     ?assertionGraph prov:wasDerivedFrom ?distribution .
     ?dataset dcat:distribution ?distribution .
     ?distribution dcterms:created ?distributionCreated .
-    ?distribution prov:wasDerivedFrom ?distributionSource .
-    # TODO: fix this:
-    #?distributionSource pav:retrievedOn ?distributionSourceRetrieved .
+    ?distribution prov:wasDerivedFrom ?distributionRetrievedSource .
+    ?distributionRetrievedSource prov:wasDerivedFrom ?distributionSource .
+    ?distributionRetrievedSource pav:retrievedOn ?distributionSourceRetrievedOn .
     ?distributionSource prov:wasAttributedTo ?distributionSourcePublisher .
   }
   graph ?publicationInfoGraph {
-    ?nanopub dcterms:created ?now .
+    ?nanopub dcterms:created ?now .  # This triple is replaced later
     # TODO: license and rights holder?
   }
 } where {
@@ -101,7 +101,7 @@ insert {
       ?dataset dcat:distribution ?distribution .
       ?distribution dcterms:created ?distributionCreated .
       ?distribution dcterms:source ?distributionSource .
-      ?distributionSource pav:retrievedOn ?distributionSourceRetrieved .
+      ?distributionSource pav:retrievedOn ?distributionSourceRetrievedOn .
       ?distributionSource dcterms:publisher ?distributionSourcePublisher .
     }
   }
@@ -110,5 +110,6 @@ insert {
   bind(iri(concat(str(?nanopub),"assertion")) as ?assertionGraph)
   bind(iri(concat(str(?nanopub),"provenance")) as ?provenanceGraph)
   bind(iri(concat(str(?nanopub),"publicationInfo")) as ?publicationInfoGraph)
+  bind(iri(concat(str(?distributionSource),"#retrieved-on:",str(?distributionSourceRetrievedOn))) as ?distributionRetrievedSource)
   bind(now() as ?now)
 }

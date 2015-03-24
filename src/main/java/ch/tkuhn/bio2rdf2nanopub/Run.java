@@ -9,6 +9,7 @@ import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +28,11 @@ import org.openrdf.model.Resource;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
+import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.LiteralImpl;
 import org.openrdf.model.impl.StatementImpl;
 import org.openrdf.model.impl.URIImpl;
+import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.vocabulary.DCTERMS;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.query.QueryLanguage;
@@ -76,10 +79,13 @@ public class Run {
 	private static final URI provWasAttributedTo = new URIImpl("http://www.w3.org/ns/prov#wasAttributedTo");
 	private static final URI provWasStartedBy = new URIImpl("http://www.w3.org/ns/prov#wasStartedBy");
 	private static final URI provSpecializationOf = new URIImpl("http://www.w3.org/ns/prov#specializationOf");
+	private static final URI provUsed = new URIImpl("http://www.w3.org/ns/prov#used");
 	private static final URI pavVersion = new URIImpl("http://purl.org/pav/version");
 	private static final URI dctIdentifier = new URIImpl("http://purl.org/dc/terms/identifier");
 
 	private static Logger logger = LoggerFactory.getLogger(Run.class);
+
+	private static ValueFactory vf = new ValueFactoryImpl();
 
 	private Properties conf;
 
@@ -253,14 +259,17 @@ public class Run {
 			}
 			count++;
 			Nanopub rawNanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
+			sailRepo.getConnection().clear(rawNanopub.getPubinfoUri());
+			addPubinfoStatement(rawNanopub, nanopubId, DCTERMS.CREATED, vf.createLiteral(new Date()));
 			addPubinfoStatement(rawNanopub, nanopubId, provWasGeneratedBy, processUri);
 			addPubinfoStatement(rawNanopub, processUri, provWasAssociatedWith, instanceUri);
+			addPubinfoStatement(rawNanopub, processUri, provUsed, versionUri);
 			addPubinfoStatement(rawNanopub, processUri, dctIdentifier, new LiteralImpl(uuid.toString()));
 			if (startedByOrcid != null) {
 				URI s = new URIImpl("http://orcid.org/" + startedByOrcid);
 				addPubinfoStatement(rawNanopub, processUri, provWasStartedBy, s);
 			}
-			addPubinfoStatement(rawNanopub, instanceUri, provSpecializationOf, versionUri);
+			addPubinfoStatement(rawNanopub, instanceUri, provSpecializationOf, codebaseUri);
 			for (URI c : instanceCreators) {
 				addPubinfoStatement(rawNanopub, instanceUri, provWasAttributedTo, c);
 			}
