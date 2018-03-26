@@ -1,4 +1,9 @@
 Bio2RDF2nanopub
 ===============
 
-_(work in progress...)_
+This code produces nanopublications from Bio2RDF datasets. At the moment, only Drugbank is supported.
+
+Drugbank info:
+
+- https://www.drugbank.ca/
+- License: [BY-NC](https://creativecommons.org/licenses/by-nc/4.0/legalcode)
