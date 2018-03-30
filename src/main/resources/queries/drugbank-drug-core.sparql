@@ -62,8 +62,7 @@ insert {
     ?distributionSource prov:wasAttributedTo ?distributionSourcePublisher .
   }
   graph ?publicationInfoGraph {
-    ?nanopub dcterms:created ?now .  # This triple is replaced later
-    # TODO: license and rights holder?
+    ?nanopub dcterms:license <https://creativecommons.org/licenses/by-nc/4.0/> .
   }
 } where {
   service <http://localhost:8899/sparql> {

@@ -28,8 +28,7 @@ insert {
   }
   graph ?publicationInfoGraph {
     # TODO: author/creator?
-    ?nanopub dcterms:created ?now .
-    # TODO: license and rights holder?
+    ?nanopub dcterms:license <https://creativecommons.org/licenses/by-nc/4.0/> .
   }
 } where {
   service <http://localhost:8899/sparql> {

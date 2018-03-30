@@ -58,7 +58,7 @@ public class Run {
 	@Parameter(names = "-k", description = "Key file")
 	private String keyFile = "keys/bio2rdf2nanopub";
 
-	@Parameter(names = "-s", description = "ORCID identifier of person who starts the bot process")
+	@Parameter(names = "-s", description = "ORCID identifier of person who starts the process")
 	private String startedByOrcid;
 
 	public static final void main(String[] args) {
@@ -161,14 +161,14 @@ public class Run {
 		}
 		codebaseUri = makeUri(conf.getProperty("bot-codebase-uri"));
 		System.err.println("Codebase URI: " + codebaseUri);
-		addNamespace("bot-codebase", codebaseUri.toString());
+		addNamespace("codebase", codebaseUri.toString());
 		version = conf.getProperty("git.commit.id");
 		if (!version.matches("[0-9a-f]{40}")) {
 			throw new RuntimeException("Invalid git commit identifier: " + version);
 		}
 		versionUri = makeUri(conf.getProperty("bot-version-uri-prefix") + version);
 		System.err.println("Version URI:  " + versionUri);
-		addNamespace("bot-version", versionUri.toString());
+		addNamespace("version", versionUri.toString());
 		versionCreators = new ArrayList<>();
 		for (String c : conf.getProperty("bot-version-developer-orcids").split(" ")) {
 			versionCreators.add(new URIImpl("http://orcid.org/" + c));
@@ -179,7 +179,7 @@ public class Run {
 		}
 		instanceUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort);
 		System.err.println("Instance URI: " + instanceUri);
-		addNamespace("bot-instance", instanceUri.toString());
+		addNamespace("instance", instanceUri.toString());
 		instanceCreators = new ArrayList<>();
 		for (String c : conf.getProperty("bot-instance-creator-orcids").split(" ")) {
 			instanceCreators.add(new URIImpl("http://orcid.org/" + c));
@@ -187,7 +187,7 @@ public class Run {
 		uuid = UUID.randomUUID();
 		processUri = makeUri(conf.getProperty("bot-instance-uri-prefix") + publicKeyShort + "." + uuid);
 		System.err.println("Process URI:  " + processUri);
-		addNamespace("bot-process", processUri.toString());
+		addNamespace("process", processUri.toString());
 	}
 
 	private void addNamespace(String prefix, String namespace) {
@@ -259,7 +259,6 @@ public class Run {
 			}
 			count++;
 			Nanopub rawNanopub = new NanopubImpl(sailRepo, (URI) nanopubId, nsPrefixes, namespaces);
-			sailRepo.getConnection().clear(rawNanopub.getPubinfoUri());
 			addPubinfoStatement(rawNanopub, nanopubId, DCTERMS.CREATED, vf.createLiteral(new Date()));
 			addPubinfoStatement(rawNanopub, nanopubId, provWasGeneratedBy, processUri);
 			addPubinfoStatement(rawNanopub, processUri, provWasAssociatedWith, instanceUri);
